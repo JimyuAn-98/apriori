@@ -2,12 +2,12 @@
 ###################################################################################################################
 
 """
-Created on Thu Nov 5 20:15:02 2020
+Created on Mon Nov 16 20:15:02 2020
 
 @author: Huangjiyuan
 
 代码功能描述: （1）读取处理后的数据
-            （2）使用KNN完成分类的运算
+            （2）使用apyori完成关联规则算法的实现
 
 """
 ###################################################################################################################
@@ -16,13 +16,6 @@ import pandas as pd
 import numpy as np
 import math
 from apyori import apriori
-
-#0.定义将文件保存的函数
-def save_in_xlsx(data,name):    
-    writer = pd.ExcelWriter(r'%s.xlsx'%(name))
-    data.to_excel(writer,'page_1',float_format='%.6f')
-    writer.save()
-    writer.close()
 
 #1.读取文件并将两个文件合并
 columns_name = ['mean','var','dwt_appro','dwt_detail','sampen','hurst','pfd']               #设置由各个属性组成的矩阵
@@ -40,18 +33,16 @@ dt = pd.concat([dt113,dt114],axis=0,ignore_index=True)                          
 x = dt[columns_name]
 y = dt['label']
 
+#2.数据离散化
 for i in columns_name:
-    x_temp = pd.cut(x[i],3)
-    #print(x_temp.value_counts())
+    x_temp = pd.cut(x[i],3) #采用等宽离散化方法
     x[i] = x_temp
-    #print(x)
-print(x)
 
-min_supp = 0.6
-min_conf = 0.8
-min_lift = 0.0
+#3.关联规则算法
+min_supp = 0.7      #定义最小支持度
+min_conf = 0.8      #定义最小置信度
+min_lift = 1        #定义最小提升度
 data = np.array(x)
-print(data)
 res = apriori(transactions=data, min_support=min_supp, min_confidence=min_conf, min_lift=min_lift)
 
 #支持度（support），先输入空列表，再进行赋值
@@ -65,9 +56,8 @@ bases=[]
 #推导项items_add
 adds=[]
 
-
 '''
-这里用嵌套循环来读取，是因为关联规则运算结果ap实际上是一个多维列表
+这里用嵌套循环来读取，是因为关联规则运算结果res实际上是一个多维列表
 r是从列表中取出频繁项集，而x是从频繁项集中取出关联规则。
 '''
 for r in res:
@@ -87,8 +77,6 @@ result = pd.DataFrame({
     'add':adds
 })
 
-# 选择支持度大于0.5，自信度大于0.5，提升度大于1
-re = result[(result.lift > 1) & (result.support > 0.5) & (result.confidence > 0.5)]
 #dataframe输出有时候会省略中间的变量，下面这行代码是为了让它能够全部显示
 pd.set_option('display.max_columns',None)  
-print(re)  #输出前三个规则
+print(result)  #输出所有规则
